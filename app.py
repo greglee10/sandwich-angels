@@ -2,8 +2,16 @@ from datetime import date
 
 import streamlit as st
 
+from db import initialize_database, load_donations, replace_donations
+
 from core.planner import compute_shopping_list
 
+initialize_database()
+
+saved_donations = {
+    donation["item"]: donation
+    for donation in load_donations()
+}
 
 st.title("Sandwich Angels")
 st.write("Plan ingredients for the next sandwich volunteer event.")
@@ -33,26 +41,101 @@ total_portions = st.number_input(
 
 st.subheader("Donations")
 
-bread_quantity = st.number_input("Bread donation (slices)", min_value=0, value=120, step=1)
-bread_expiry = st.date_input("Bread expiration date", value=date(2026, 10, 30))
+bread_quantity = st.number_input(
+    "Bread donation (slices)",
+    min_value=0,
+    value=saved_donations.get("bread_slices", {}).get("quantity", 120),
+    step=1,
+)
+bread_expiry = st.date_input(
+    "Bread expiration date",
+    value=saved_donations.get(
+        "bread_slices", {}
+    ).get("expiry", date(2026, 10, 30)),
+)
 
-ham_quantity = st.number_input("Ham donation (slices)", min_value=0, value=40, step=1)
-ham_expiry = st.date_input("Ham expiration date", value=date(2026, 10, 30))
+ham_quantity = st.number_input(
+    "Ham donation (slices)",
+    min_value=0,
+    value=saved_donations.get("ham_slices", {}).get("quantity", 40),
+    step=1,
+)
+ham_expiry = st.date_input(
+    "Ham expiration date",
+    value=saved_donations.get(
+        "ham_slices", {}
+    ).get("expiry", date(2026, 10, 30)),
+)
 
-cheese_quantity = st.number_input("Cheese donation (slices)", min_value=0, value=0, step=1)
-cheese_expiry = st.date_input("Cheese expiration date", value=date(2026, 10, 30))
+cheese_quantity = st.number_input(
+    "Cheese donation (slices)",
+    min_value=0,
+    value=saved_donations.get("cheese_slices", {}).get("quantity", 0),
+    step=1,
+)
+cheese_expiry = st.date_input(
+    "Cheese expiration date",
+    value=saved_donations.get(
+        "cheese_slices", {}
+    ).get("expiry", date(2026, 10, 30)),
+)
 
-lettuce_quantity = st.number_input("Lettuce donation (bags)", min_value=0, value=0, step=1)
-lettuce_expiry = st.date_input("Lettuce expiration date", value=date(2026, 10, 30))
+lettuce_quantity = st.number_input(
+    "Lettuce donation (bags)",
+    min_value=0,
+    value=saved_donations.get("lettuce_bags", {}).get("quantity", 0),
+    step=1,
+)
+lettuce_expiry = st.date_input(
+    "Lettuce expiration date",
+    value=saved_donations.get(
+        "lettuce_bags", {}
+    ).get("expiry", date(2026, 10, 30)),
+)
 
-pickle_quantity = st.number_input("Pickle donation (small jars)", min_value=0, value=0, step=1)
-pickle_expiry = st.date_input("Pickle expiration date", value=date(2026, 10, 30))
+pickle_quantity = st.number_input(
+    "Pickle donation (small jars)",
+    min_value=0,
+    value=saved_donations.get("pickle_small_jars", {}).get("quantity", 0),
+    step=1,
+)
+pickle_expiry = st.date_input(
+    "Pickle expiration date",
+    value=saved_donations.get(
+        "pickle_small_jars", {}
+    ).get("expiry", date(2026, 10, 30)),
+)
 
-mustard_quantity = st.number_input("Mustard donation (small bottles)", min_value=0, value=0, step=1)
-mustard_expiry = st.date_input("Mustard expiration date", value=date(2026, 10, 30))
+mustard_quantity = st.number_input(
+    "Mustard donation (small bottles)",
+    min_value=0,
+    value=saved_donations.get(
+        "mustard_small_bottles", {}
+    ).get("quantity", 0),
+    step=1,
+)
+mustard_expiry = st.date_input(
+    "Mustard expiration date",
+    value=saved_donations.get(
+        "mustard_small_bottles", {}
+    ).get("expiry", date(2026, 10, 30)),
+)
 
-mayonnaise_quantity = st.number_input("Mayonnaise donation (small bottles)", min_value=0, value=0, step=1)
-mayonnaise_expiry = st.date_input("Mayonnaise expiration date", value=date(2026, 10, 30))
+mayonnaise_quantity = st.number_input(
+    "Mayonnaise donation (small bottles)",
+    min_value=0,
+    value=saved_donations.get(
+        "mayonnaise_small_bottles", {}
+    ).get("quantity", 0),
+    step=1,
+)
+mayonnaise_expiry = st.date_input(
+    "Mayonnaise expiration date",
+    value=saved_donations.get(
+        "mayonnaise_small_bottles", {}
+    ).get("expiry", date(2026, 10, 30)),
+)
+
 
 
 if st.button("Calculate shopping list"):
@@ -106,6 +189,9 @@ if st.button("Calculate shopping list"):
             "quantity": mayonnaise_quantity,
             "expiry": mayonnaise_expiry,
         })
+
+    replace_donations(donations)
+    donations = load_donations()
 
 
     results = compute_shopping_list(
