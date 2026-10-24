@@ -2,11 +2,54 @@ from datetime import date
 
 import streamlit as st
 
-from db import initialize_database, load_donations, replace_donations
+from db import (
+    add_signup,
+    initialize_database,
+    load_donations,
+    load_signups,
+    replace_donations,
+)
 
 from core.planner import compute_shopping_list
 
 initialize_database()
+
+target_portions = 9
+signups = load_signups()
+signed_portions = sum(signup["portions"] for signup in signups)
+remaining_portions = target_portions - signed_portions
+
+st.subheader("Volunteer sign-up")
+st.write(f"Signed up: {signed_portions} / {target_portions} portions")
+st.write(f"Remaining: {remaining_portions} portions")
+
+if remaining_portions > 0:
+    with st.form("signup_form"):
+        first_name = st.text_input("First name")
+        pin = st.text_input("Choose a 4-digit PIN", type="password")
+        portions = st.number_input(
+            "Portions to sign up for",
+            min_value=1,
+            max_value=remaining_portions,
+            value=1,
+            step=1,
+        )
+        submitted = st.form_submit_button("Sign up")
+
+    if submitted:
+        success, message = add_signup(
+            first_name=first_name,
+            pin=pin,
+            portions=int(portions),
+            target_portions=target_portions,
+        )
+        if success:
+            st.success(message)
+            st.rerun()
+        else:
+            st.error(message)
+else:
+    st.info("The signup target has been reached.")
 
 saved_donations = {
     donation["item"]: donation
@@ -32,12 +75,8 @@ event_date = st.date_input(
     value=date(2026, 10, 30),
 )
 
-total_portions = st.number_input(
-    "Portions signed up",
-    min_value=0,
-    value=9,
-    step=1,
-)
+total_portions = signed_portions
+st.write(f"Portions used for shopping list: {total_portions}")
 
 st.subheader("Donations")
 

@@ -1,4 +1,6 @@
 import sqlite3
+import hashlib
+import secrets
 from datetime import date
 from pathlib import Path
 
@@ -62,4 +64,86 @@ def load_donations():
             "expiry": date.fromisoformat(expiry),
         }
         for item, quantity, expiry in rows
+    ]
+
+
+
+def hash_pin(pin):
+    salt = secrets.token_bytes(16)
+    pin_hash = hashlib.pbkdf2_hmac(
+        "sha256",
+        pin.encode("utf-8"),
+        salt,
+        200_000,
+    )
+    return f"{salt.hex()}:{pin_hash.hex()}"
+
+def add_signup(first_name, pin, portions, target_portions):
+    first_name = first_name.strip()
+
+    if not first_name:
+        return False, "Enter a first name."
+
+    if len(pin) != 4 or not pin.isdigit():
+        return False, "PIN must contain exactly 4 digits."
+
+    if portions < 1:
+        return False, "Choose at least 1 portion."
+
+    if target_portions < 1:
+        return False, "The target must be at least 1 portion."
+
+    with sqlite3.connect(DATABASE_PATH, timeout=10) as connection:
+        connection.execute("BEGIN IMMEDIATE")
+
+        existing_signup = connection.execute(
+            """
+            SELECT signup_id
+            FROM signups
+            WHERE lower(first_name) = lower(?)
+            """,
+            (first_name,),
+        ).fetchone()
+
+        if existing_signup:
+            connection.rollback()
+            return False, "That name already has a signup."
+
+        signed_portions = connection.execute(
+            "SELECT COALESCE(SUM(portions), 0) FROM signups"
+        ).fetchone()[0]
+
+        if signed_portions + portions > target_portions:
+            remaining = target_portions - signed_portions
+            connection.rollback()
+            return False, f"Only {remaining} portion(s) remain."
+
+        connection.execute(
+            """
+            INSERT INTO signups (first_name, pin_hash, portions)
+            VALUES (?, ?, ?)
+            """,
+            (first_name, hash_pin(pin), portions),
+        )
+
+    return True, "Signup saved."
+
+
+def load_signups():
+    with sqlite3.connect(DATABASE_PATH) as connection:
+        rows = connection.execute(
+            """
+            SELECT signup_id, first_name, portions
+            FROM signups
+            ORDER BY signup_id
+            """
+        ).fetchall()
+
+    return [
+        {
+            "signup_id": signup_id,
+            "first_name": first_name,
+            "portions": portions,
+        }
+        for signup_id, first_name, portions in rows
     ]
