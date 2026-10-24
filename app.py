@@ -80,6 +80,8 @@ saved_donations = {
 }
 
 st.title("Sandwich Angels")
+st.caption("Unofficial volunteer tool")
+st.warning("The app doesn't check food safety. Follow the event organizer's instructions.")
 st.write("Plan ingredients for the next sandwich volunteer event.")
 
 recipe = {
