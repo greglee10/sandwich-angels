@@ -12,6 +12,8 @@ from db import (
 
 from core.planner import compute_shopping_list
 
+from core.kit_splitter import make_kits, allocate_donations
+
 initialize_database()
 
 target_portions = 9
@@ -254,3 +256,34 @@ if st.button("Calculate shopping list"):
 
     st.subheader("Shopping list")
     st.dataframe(results)
+
+    kits = make_kits(signups, recipe, unit_size)
+    allocated_kits = allocate_donations(kits, donations, event_date)
+
+    st.subheader("Kit assignments")
+
+    kit_rows = []
+
+    for kit in allocated_kits:
+        for item, details in kit["ingredients"].items():
+            donated_amount = sum(
+                lot["quantity"] for lot in details["donated"]
+            )
+            expiry_dates = ", ".join(
+                lot["expiry"].isoformat() for lot in details["donated"]
+            )
+
+            kit_rows.append({
+                "Volunteer": kit["volunteer"],
+                "Portions": kit["portions"],
+                "Ingredient": item,
+                "Needed": details["needed"],
+                "Donated": donated_amount,
+                "Expiration dates": expiry_dates,
+                "To buy": details["to_buy"],
+            })
+
+    if kit_rows:
+        st.dataframe(kit_rows, hide_index=True)
+    else:
+        st.info("There are no signups to assign kits to.")
