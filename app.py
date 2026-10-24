@@ -338,8 +338,15 @@ completed_count = st.number_input(
 
 st.write(f"Completed: {int(completed_count)} / {planned_sandwiches}")
 
-if completed_count > planned_sandwiches:
-    st.warning("The completed count is higher than the planned count. Please verify it.")
+if completed_count < planned_sandwiches:
+    shortfall = planned_sandwiches - int(completed_count)
+    st.warning(f"{shortfall} more sandwiches are needed to reach the target.")
+elif completed_count == planned_sandwiches:
+    st.success("The planned sandwich count has been reached.")
+else:
+    st.warning(
+        "The completed count is higher than the planned count. Please verify it."
+    )
 
 if st.button("Save completed count"):
     save_completed_count(event_date, int(completed_count))
