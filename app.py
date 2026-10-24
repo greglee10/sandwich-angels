@@ -51,6 +51,17 @@ if remaining_portions > 0:
 else:
     st.info("The signup target has been reached.")
 
+if signups:
+    st.subheader("Signup summary")
+    signup_summary = [
+        {
+            "First name": signup["first_name"],
+            "Portions": signup["portions"],
+        }
+        for signup in signups
+    ]
+    st.dataframe(signup_summary, hide_index=True)
+
 saved_donations = {
     donation["item"]: donation
     for donation in load_donations()
