@@ -55,10 +55,10 @@ if signups:
     st.subheader("Signup summary")
     signup_summary = [
         {
-            "First name": signup["first_name"],
+            "Volunteer": f"Volunteer {index}",
             "Portions": signup["portions"],
         }
-        for signup in signups
+        for index, signup in enumerate(signups, start=1)
     ]
     st.dataframe(signup_summary, hide_index=True)
 
