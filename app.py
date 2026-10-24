@@ -8,6 +8,8 @@ from db import (
     load_donations,
     load_signups,
     replace_donations,
+    load_completed_count,
+    save_completed_count,
     load_received_signup_ids,
     set_kit_received,
 )
@@ -318,3 +320,27 @@ if receipt_allocations:
             on_change=save_receipt,
             args=(kit["signup_id"], state_key),
         )
+
+st.subheader("Event completion")
+
+planned_sandwiches = signed_portions * unit_size
+saved_completed_count = load_completed_count(event_date)
+
+st.write(f"Planned sandwiches: {planned_sandwiches}")
+
+completed_count = st.number_input(
+    "Sandwiches completed",
+    min_value=0,
+    value=saved_completed_count,
+    step=1,
+    key=f"completed_count_{event_date.isoformat()}",
+)
+
+st.write(f"Completed: {int(completed_count)} / {planned_sandwiches}")
+
+if completed_count > planned_sandwiches:
+    st.warning("The completed count is higher than the planned count. Please verify it.")
+
+if st.button("Save completed count"):
+    save_completed_count(event_date, int(completed_count))
+    st.success("Completed count saved.")

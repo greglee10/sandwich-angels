@@ -33,6 +33,13 @@ def initialize_database():
                 portions INTEGER NOT NULL CHECK (portions >= 0)
             )
         """)
+        connection.execute("""
+            CREATE TABLE IF NOT EXISTS event_completions (
+                event_date TEXT PRIMARY KEY,
+                completed_count INTEGER NOT NULL CHECK (completed_count >= 0)
+            )
+        """)
+
 
 
 def replace_donations(donations):
@@ -174,4 +181,26 @@ def set_kit_received(signup_id, received):
             DO UPDATE SET received = excluded.received
             """,
             (signup_id, int(received)),
+        )
+
+def load_completed_count(event_date):
+    with sqlite3.connect(DATABASE_PATH) as connection:
+        row = connection.execute(
+            "SELECT completed_count FROM event_completions WHERE event_date = ?",
+            (event_date.isoformat(),),
+        ).fetchone()
+
+    return row[0] if row else 0
+
+
+def save_completed_count(event_date, completed_count):
+    with sqlite3.connect(DATABASE_PATH) as connection:
+        connection.execute(
+            """
+            INSERT INTO event_completions (event_date, completed_count)
+            VALUES (?, ?)
+            ON CONFLICT(event_date)
+            DO UPDATE SET completed_count = excluded.completed_count
+            """,
+            (event_date.isoformat(), completed_count),
         )
