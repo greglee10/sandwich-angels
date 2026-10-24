@@ -40,6 +40,7 @@ def make_kits(signups, recipe, unit_size):
         kits.append({
             "first_name": signup["first_name"],
             "portions": signup["portions"],
+            "signup_id": signup["signup_id"],
             "ingredients": ingredients,
         })
 
@@ -98,6 +99,7 @@ def allocate_donations(kits, donations, event_date):
         allocated_kits.append({
             "volunteer": f"Volunteer {index}",
             "portions": kit["portions"],
+            "signup_id": kit["signup_id"],
             "ingredients": ingredient_plan,
         })
 

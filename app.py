@@ -8,11 +8,19 @@ from db import (
     load_donations,
     load_signups,
     replace_donations,
+    load_received_signup_ids,
+    set_kit_received,
 )
 
 from core.planner import compute_shopping_list
 
 from core.kit_splitter import make_kits, allocate_donations
+
+def save_receipt(signup_id, state_key):
+    set_kit_received(
+        signup_id,
+        st.session_state[state_key],
+    )
 
 initialize_database()
 
@@ -287,3 +295,26 @@ if st.button("Calculate shopping list"):
         st.dataframe(kit_rows, hide_index=True)
     else:
         st.info("There are no signups to assign kits to.")
+
+receipt_donations = load_donations()
+receipt_kits = make_kits(signups, recipe, unit_size)
+receipt_allocations = allocate_donations(
+    receipt_kits,
+    receipt_donations,
+    event_date,
+)
+received_signup_ids = load_received_signup_ids()
+
+if receipt_allocations:
+    st.subheader("Kit pickup")
+
+    for kit in receipt_allocations:
+        state_key = f"kit_received_{kit['signup_id']}"
+
+        st.checkbox(
+            f"{kit['volunteer']} received kit",
+            value=kit["signup_id"] in received_signup_ids,
+            key=state_key,
+            on_change=save_receipt,
+            args=(kit["signup_id"], state_key),
+        )

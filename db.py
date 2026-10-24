@@ -18,6 +18,12 @@ def initialize_database():
                 expiry TEXT NOT NULL
             )
         """)
+        connection.execute("""
+            CREATE TABLE IF NOT EXISTS kit_receipts (
+                signup_id INTEGER PRIMARY KEY,
+                received INTEGER NOT NULL DEFAULT 0 CHECK (received IN (0, 1))
+            )
+        """)
 
         connection.execute("""
             CREATE TABLE IF NOT EXISTS signups (
@@ -147,3 +153,25 @@ def load_signups():
         }
         for signup_id, first_name, portions in rows
     ]
+
+
+def load_received_signup_ids():
+    with sqlite3.connect(DATABASE_PATH) as connection:
+        rows = connection.execute(
+            "SELECT signup_id FROM kit_receipts WHERE received = 1"
+        ).fetchall()
+
+    return {row[0] for row in rows}
+
+
+def set_kit_received(signup_id, received):
+    with sqlite3.connect(DATABASE_PATH) as connection:
+        connection.execute(
+            """
+            INSERT INTO kit_receipts (signup_id, received)
+            VALUES (?, ?)
+            ON CONFLICT(signup_id)
+            DO UPDATE SET received = excluded.received
+            """,
+            (signup_id, int(received)),
+        )
