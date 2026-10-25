@@ -393,6 +393,78 @@ def get_volunteer_signup(volunteer_id, event_date):
     }
 
 
+def load_volunteer_history(volunteer_id):
+    with sqlite3.connect(DATABASE_PATH) as connection:
+        rows = connection.execute(
+            """
+            SELECT event_date, portions, attended
+            FROM signups
+            WHERE volunteer_id = ?
+            ORDER BY event_date DESC
+            """,
+            (volunteer_id,),
+        ).fetchall()
+
+    return [
+        {
+            "event_date": date.fromisoformat(event_date_text),
+            "portions": portions,
+            "attended": bool(attended),
+        }
+        for event_date_text, portions, attended in rows
+    ]
+
+
+def load_admin_signup_history():
+    with sqlite3.connect(DATABASE_PATH) as connection:
+        rows = connection.execute(
+            """
+            SELECT
+                s.signup_id,
+                COALESCE(v.display_name, s.first_name),
+                COALESCE(v.username, ""),
+                s.event_date,
+                s.portions,
+                s.attended
+            FROM signups AS s
+            LEFT JOIN volunteers AS v
+                ON v.volunteer_id = s.volunteer_id
+            ORDER BY s.event_date DESC, s.first_name COLLATE NOCASE
+            """
+        ).fetchall()
+
+    return [
+        {
+            "signup_id": signup_id,
+            "display_name": display_name,
+            "username": username,
+            "event_date": date.fromisoformat(event_date_text),
+            "portions": portions,
+            "attended": bool(attended),
+        }
+        for (
+            signup_id,
+            display_name,
+            username,
+            event_date_text,
+            portions,
+            attended,
+        ) in rows
+    ]
+
+
+def set_signup_attendance(signup_id, attended):
+    with sqlite3.connect(DATABASE_PATH) as connection:
+        connection.execute(
+            """
+            UPDATE signups
+            SET attended = ?
+            WHERE signup_id = ?
+            """,
+            (int(attended), signup_id),
+        )
+
+
 def update_volunteer_signup(volunteer_id, event_date, new_portions, target_portions):
     if new_portions < 1:
         return False, "Choose at least 1 portion."

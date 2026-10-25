@@ -6,6 +6,7 @@ from db import (
     get_volunteer_signup,
     initialize_database,
     load_signups,
+    load_volunteer_history,
     login_volunteer,
     register_volunteer,
     update_volunteer_signup,
@@ -147,3 +148,33 @@ else:
             st.rerun()
         else:
             st.error(message)
+
+
+st.divider()
+st.subheader("My past volunteer activities")
+
+history = load_volunteer_history(volunteer["volunteer_id"])
+past_history = [
+    record
+    for record in history
+    if record["event_date"] <= date.today()
+]
+
+if past_history:
+    history_rows = [
+        {
+            "Event date": record["event_date"].isoformat(),
+            "Portions": record["portions"],
+            "Sandwiches": record["portions"] * 10,
+            "Attendance": (
+                "Confirmed"
+                if record["attended"]
+                else "Awaiting organizer confirmation"
+            ),
+        }
+        for record in past_history
+    ]
+
+    st.dataframe(history_rows, hide_index=True)
+else:
+    st.info("No past volunteer activities yet.")
