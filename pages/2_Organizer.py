@@ -65,7 +65,16 @@ if (
 ):
     st.session_state["organizer_event_date"] = event_dates[0]
 
-selected_event_date = st.session_state["organizer_event_date"]
+
+selected_event_date = st.selectbox(
+    "Choose an event",
+    options=event_dates,
+    index=event_dates.index(st.session_state["organizer_event_date"]),
+    format_func=lambda value: value.strftime("%A, %B %d, %Y"),
+)
+st.session_state["organizer_event_date"] = selected_event_date
+
+
 selected_event = next(
     event
     for event in scheduled_events
@@ -81,7 +90,7 @@ remaining_portions = target_portions - signed_portions
 
 saved_donations = {
     donation["item"]: donation
-    for donation in load_donations()
+    for donation in load_donations(event_date)
 }
 
 st.title("Sandwich Angels")
@@ -112,65 +121,86 @@ bread_quantity = st.number_input(
     min_value=0,
     value=saved_donations.get("bread_slices", {}).get("quantity", 120),
     step=1,
+    key=f"bread_quantity_{event_date.isoformat()}",
 )
+
 bread_expiry = st.date_input(
     "Bread expiration date",
     value=saved_donations.get(
         "bread_slices", {}
     ).get("expiry", date(2026, 10, 30)),
+    key=f"bread_expiry_{event_date.isoformat()}",
 )
+
 
 ham_quantity = st.number_input(
     "Ham donation (slices)",
     min_value=0,
     value=saved_donations.get("ham_slices", {}).get("quantity", 40),
     step=1,
+    key=f"ham_quantity_{event_date.isoformat()}",
 )
+
 ham_expiry = st.date_input(
     "Ham expiration date",
     value=saved_donations.get(
         "ham_slices", {}
     ).get("expiry", date(2026, 10, 30)),
+    key=f"ham_expiry_{event_date.isoformat()}",
 )
+
 
 cheese_quantity = st.number_input(
     "Cheese donation (slices)",
     min_value=0,
     value=saved_donations.get("cheese_slices", {}).get("quantity", 0),
     step=1,
+    key=f"cheese_quantity_{event_date.isoformat()}",
 )
+
+
 cheese_expiry = st.date_input(
     "Cheese expiration date",
     value=saved_donations.get(
         "cheese_slices", {}
     ).get("expiry", date(2026, 10, 30)),
+    key=f"cheese_expiry_{event_date.isoformat()}",
 )
+
 
 lettuce_quantity = st.number_input(
     "Lettuce donation (bags)",
     min_value=0,
     value=saved_donations.get("lettuce_bags", {}).get("quantity", 0),
     step=1,
+    key=f"lettuce_quantity_{event_date.isoformat()}",
 )
+
 lettuce_expiry = st.date_input(
     "Lettuce expiration date",
     value=saved_donations.get(
         "lettuce_bags", {}
     ).get("expiry", date(2026, 10, 30)),
+    key=f"lettuce_expiry_{event_date.isoformat()}",
 )
+
 
 pickle_quantity = st.number_input(
     "Pickle donation (small jars)",
     min_value=0,
     value=saved_donations.get("pickle_small_jars", {}).get("quantity", 0),
     step=1,
+    key=f"pickle_quantity_{event_date.isoformat()}",
 )
+
 pickle_expiry = st.date_input(
     "Pickle expiration date",
     value=saved_donations.get(
         "pickle_small_jars", {}
     ).get("expiry", date(2026, 10, 30)),
+    key=f"pickle_expiry_{event_date.isoformat()}",
 )
+
 
 mustard_quantity = st.number_input(
     "Mustard donation (small bottles)",
@@ -179,13 +209,19 @@ mustard_quantity = st.number_input(
         "mustard_small_bottles", {}
     ).get("quantity", 0),
     step=1,
+    key=f"mustard_quantity_{event_date.isoformat()}",
 )
+
+
 mustard_expiry = st.date_input(
     "Mustard expiration date",
     value=saved_donations.get(
         "mustard_small_bottles", {}
     ).get("expiry", date(2026, 10, 30)),
+    key=f"mustard_expiry_{event_date.isoformat()}",
 )
+
+
 
 mayonnaise_quantity = st.number_input(
     "Mayonnaise donation (small bottles)",
@@ -194,13 +230,18 @@ mayonnaise_quantity = st.number_input(
         "mayonnaise_small_bottles", {}
     ).get("quantity", 0),
     step=1,
+    key=f"mayonnaise_quantity_{event_date.isoformat()}",
 )
+
+
 mayonnaise_expiry = st.date_input(
     "Mayonnaise expiration date",
     value=saved_donations.get(
         "mayonnaise_small_bottles", {}
     ).get("expiry", date(2026, 10, 30)),
+    key=f"mayonnaise_expiry_{event_date.isoformat()}",
 )
+
 
 
 
@@ -256,8 +297,8 @@ if st.button("Calculate shopping list"):
             "expiry": mayonnaise_expiry,
         })
 
-    replace_donations(donations)
-    donations = load_donations()
+    replace_donations(donations, event_date)
+    donations = load_donations(event_date)
 
 
     results = compute_shopping_list(
@@ -302,7 +343,7 @@ if st.button("Calculate shopping list"):
     else:
         st.info("There are no signups to assign kits to.")
 
-receipt_donations = load_donations()
+receipt_donations = load_donations(event_date)
 receipt_kits = make_kits(signups, recipe, unit_size)
 receipt_allocations = allocate_donations(
     receipt_kits,
