@@ -98,6 +98,64 @@ st.caption("Unofficial volunteer tool")
 st.warning("The app doesn't check food safety. Follow the event organizer's instructions.")
 st.write("Plan ingredients for the next sandwich volunteer event.")
 
+if "organizer_section" not in st.session_state:
+    st.session_state["organizer_section"] = "menu"
+
+if st.session_state["organizer_section"] == "menu":
+    st.subheader("Organizer menu")
+
+    left_column, right_column = st.columns(2)
+
+    with left_column:
+        with st.container(border=True):
+            st.subheader("Event schedule")
+            st.write("Create Friday events and update pickup and drop-off details.")
+            st.button(
+                "Open event schedule",
+                key="menu_event_schedule",
+                use_container_width=True,
+            )
+
+        with st.container(border=True):
+            st.subheader("Donations & shopping list")
+            st.write("Enter donated ingredients and calculate what to buy.")
+            st.button(
+                "Open donations",
+                key="menu_donations",
+                use_container_width=True,
+            )
+
+        with st.container(border=True):
+            st.subheader("Event completion")
+            st.write("Record how many sandwiches were completed.")
+            st.button(
+                "Open event completion",
+                key="menu_completion",
+                use_container_width=True,
+            )
+
+    with right_column:
+        with st.container(border=True):
+            st.subheader("Kit assignments & pickup")
+            st.write("Review ingredient kits and mark kit pickup.")
+            st.button(
+                "Open kit assignments",
+                key="menu_kits",
+                use_container_width=True,
+            )
+
+        with st.container(border=True):
+            st.subheader("Volunteer roster & history")
+            st.write("Review volunteer signups and attendance.")
+            st.button(
+                "Open volunteer history",
+                key="menu_volunteer_history",
+                use_container_width=True,
+            )
+
+    st.stop()
+
+
 recipe = {
     "bread_slices": 2,
     "ham_slices": 1,
