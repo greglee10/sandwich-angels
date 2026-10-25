@@ -18,6 +18,23 @@ def initialize_database():
                 expiry TEXT NOT NULL
             )
         """)
+
+
+        donation_columns = {
+            row[1]
+            for row in connection.execute("PRAGMA table_info(donations)")
+        }
+
+        if "event_date" not in donation_columns:
+            connection.execute(
+                """
+                ALTER TABLE donations
+                ADD COLUMN event_date TEXT NOT NULL DEFAULT '2026-10-30'
+                """
+            )
+
+
+
         connection.execute("""
             CREATE TABLE IF NOT EXISTS kit_receipts (
                 signup_id INTEGER PRIMARY KEY,
@@ -208,32 +225,44 @@ def save_event(event_date, target_portions, pickup_details, dropoff_details, is_
 
 
 
-def replace_donations(donations):
+def replace_donations(donations, event_date=None):
+    if event_date is None:
+        event_date = date(2026, 10, 30)
+
     with sqlite3.connect(DATABASE_PATH) as connection:
-        connection.execute("DELETE FROM donations")
+        connection.execute(
+            "DELETE FROM donations WHERE event_date = ?",
+            (event_date.isoformat(),),
+        )
 
         for donation in donations:
             connection.execute(
                 """
-                INSERT INTO donations (item, quantity, expiry)
-                VALUES (?, ?, ?)
+                INSERT INTO donations (item, quantity, expiry, event_date)
+                VALUES (?, ?, ?, ?)
                 """,
                 (
                     donation["item"],
                     donation["quantity"],
                     donation["expiry"].isoformat(),
+                    event_date.isoformat(),
                 ),
             )
 
 
-def load_donations():
+def load_donations(event_date=None):
+    if event_date is None:
+        event_date = date(2026, 10, 30)
+
     with sqlite3.connect(DATABASE_PATH) as connection:
         rows = connection.execute(
             """
             SELECT item, quantity, expiry
             FROM donations
+            WHERE event_date = ?
             ORDER BY donation_id
-            """
+            """,
+            (event_date.isoformat(),),
         ).fetchall()
 
     return [
@@ -244,6 +273,7 @@ def load_donations():
         }
         for item, quantity, expiry in rows
     ]
+
 
 
 
