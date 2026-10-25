@@ -102,11 +102,15 @@ selected_event = next(
 target_portions = selected_event["target_portions"]
 pickup_date = event_date - timedelta(days=1)
 
-st.write(f"Thursday pickup: {pickup_date.strftime('%A, %B %d, %Y')}")
-st.write(selected_event["pickup_details"])
-st.write(f"Friday drop-off: {event_date.strftime('%A, %B %d, %Y')}")
-st.write(selected_event["dropoff_details"])
+with st.container(border=True):
+    st.markdown("### 🧺 Thursday pickup")
+    st.markdown(f"**{pickup_date.strftime('%A, %B %d, %Y')}**")
+    st.info(selected_event["pickup_details"] or "Pickup details will be announced.")
 
+with st.container(border=True):
+    st.markdown("### 🥪 Friday drop-off")
+    st.markdown(f"**{event_date.strftime('%A, %B %d, %Y')}**")
+    st.success(selected_event["dropoff_details"] or "Drop-off details will be announced.")
 
 signups = load_signups(event_date)
 signed_portions = sum(signup["portions"] for signup in signups)
