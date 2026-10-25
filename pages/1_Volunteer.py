@@ -1,5 +1,5 @@
 import streamlit as st
-from datetime import date
+from datetime import date, timedelta
 
 from db import (
     add_signup_for_volunteer,
@@ -10,14 +10,15 @@ from db import (
     login_volunteer,
     register_volunteer,
     update_volunteer_signup,
+    load_events,
 )
 
 
 st.set_page_config(page_title="Volunteer", page_icon="🥪")
 initialize_database()
 
-event_date = date(2026, 10, 30)
-target_portions = 9
+
+
 
 st.title("Sandwich Angels")
 st.caption("Unofficial volunteer tool")
@@ -77,6 +78,35 @@ if st.sidebar.button("Log out"):
     st.rerun()
 
 st.subheader(f"Welcome, {volunteer['display_name']}")
+
+
+open_events = load_events()
+
+if not open_events:
+    st.info("There are no open events yet. Please check again later.")
+    st.stop()
+
+event_dates = [event["event_date"] for event in open_events]
+
+event_date = st.selectbox(
+    "Choose a Friday event",
+    options=event_dates,
+    format_func=lambda value: value.strftime("%A, %B %d, %Y"),
+)
+
+selected_event = next(
+    event for event in open_events
+    if event["event_date"] == event_date
+)
+
+target_portions = selected_event["target_portions"]
+pickup_date = event_date - timedelta(days=1)
+
+st.write(f"Thursday pickup: {pickup_date.strftime('%A, %B %d, %Y')}")
+st.write(selected_event["pickup_details"])
+st.write(f"Friday drop-off: {event_date.strftime('%A, %B %d, %Y')}")
+st.write(selected_event["dropoff_details"])
+
 
 signups = load_signups(event_date)
 signed_portions = sum(signup["portions"] for signup in signups)

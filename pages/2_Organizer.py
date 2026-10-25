@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 import streamlit as st
 
@@ -14,6 +14,9 @@ from db import (
     set_kit_received,
     load_admin_signup_history,
     set_signup_attendance,
+    create_friday_events_for_next_3_months,
+    load_events,
+    save_event,
 )
 
 from core.planner import compute_shopping_list
@@ -45,11 +48,35 @@ def save_receipt(signup_id, state_key):
 
 initialize_database()
 
-target_portions = 9
-signups = load_signups()
+
+
+scheduled_events = load_events(include_closed=True)
+
+if not scheduled_events:
+    st.info("There are no scheduled events yet.")
+    st.stop()
+
+
+event_dates = [event["event_date"] for event in scheduled_events]
+
+if (
+    "organizer_event_date" not in st.session_state
+    or st.session_state["organizer_event_date"] not in event_dates
+):
+    st.session_state["organizer_event_date"] = event_dates[0]
+
+selected_event_date = st.session_state["organizer_event_date"]
+selected_event = next(
+    event
+    for event in scheduled_events
+    if event["event_date"] == selected_event_date
+)
+
+event_date = selected_event_date
+target_portions = selected_event["target_portions"]
+signups = load_signups(event_date)
 signed_portions = sum(signup["portions"] for signup in signups)
 remaining_portions = target_portions - signed_portions
-
 
 
 saved_donations = {
@@ -73,10 +100,7 @@ recipe = {
 }
 unit_size = 10
 
-event_date = st.date_input(
-    "Event date",
-    value=date(2026, 10, 30),
-)
+
 
 total_portions = signed_portions
 st.write(f"Portions used for shopping list: {total_portions}")
@@ -376,3 +400,71 @@ else:
 
         st.success("Attendance records saved.")
         st.rerun()
+
+
+st.divider()
+st.subheader(
+    f"Plan event: {selected_event_date.strftime('%A, %B %d, %Y')}"
+)
+
+if st.button(
+    "Create Friday dates for the next 3 months",
+    key="create_more_friday_dates",
+):
+    create_friday_events_for_next_3_months()
+    st.rerun()
+
+st.selectbox(
+    "Choose a Friday event",
+    options=event_dates,
+    format_func=lambda value: value.strftime("%A, %B %d, %Y"),
+    key="organizer_event_date",
+)
+
+pickup_date = selected_event_date - timedelta(days=1)
+st.write(f"Thursday pickup: {pickup_date.strftime('%A, %B %d, %Y')}")
+st.write(
+    f"Friday drop-off: "
+    f"{selected_event_date.strftime('%A, %B %d, %Y')}"
+)
+
+with st.form(f"event_details_{selected_event_date.isoformat()}"):
+    event_target = st.number_input(
+        "Signup target (portions)",
+        min_value=1,
+        value=selected_event["target_portions"],
+        step=1,
+    )
+    pickup_details = st.text_area(
+        "Thursday pickup details",
+        value=selected_event["pickup_details"]
+        or "4:00 PM–6:00 PM, HFK kitchen",
+        key=f"pickup_details_{selected_event_date.isoformat()}",
+    )
+    dropoff_details = st.text_area(
+        "Friday drop-off details",
+        value=selected_event["dropoff_details"]
+        or "7:00 AM–9:00 AM, HFK kitchen",
+        key=f"dropoff_details_{selected_event_date.isoformat()}",
+    )
+    is_open = st.checkbox(
+        "Open signups for this event",
+        value=selected_event["is_open"],
+        key=f"event_open_{selected_event_date.isoformat()}",
+    )
+    save_event_submitted = st.form_submit_button("Save event")
+
+if save_event_submitted:
+    success, message = save_event(
+        event_date=selected_event_date,
+        target_portions=int(event_target),
+        pickup_details=pickup_details,
+        dropoff_details=dropoff_details,
+        is_open=is_open,
+    )
+
+    if success:
+        st.success(message)
+        st.rerun()
+    else:
+        st.error(message)

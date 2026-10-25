@@ -1,7 +1,7 @@
 import sqlite3
 import hashlib
 import secrets
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 
@@ -94,6 +94,117 @@ def initialize_database():
                 completed_count INTEGER NOT NULL CHECK (completed_count >= 0)
             )
         """)
+
+        connection.execute("""
+            CREATE TABLE IF NOT EXISTS events (
+                event_date TEXT PRIMARY KEY,
+                target_portions INTEGER NOT NULL DEFAULT 9
+                    CHECK (target_portions > 0),
+                pickup_details TEXT NOT NULL DEFAULT '',
+                dropoff_details TEXT NOT NULL DEFAULT '',
+                is_open INTEGER NOT NULL DEFAULT 0
+                    CHECK (is_open IN (0, 1))
+            )
+        """)
+
+
+def create_friday_events_for_next_3_months(target_portions=9):
+    today = date.today()
+    days_until_friday = (4 - today.weekday()) % 7
+
+    if days_until_friday == 0:
+        days_until_friday = 7
+
+    event_date = today + timedelta(days=days_until_friday)
+    end_date = today + timedelta(days=90)
+    created_count = 0
+
+    with sqlite3.connect(DATABASE_PATH) as connection:
+        while event_date <= end_date:
+            cursor = connection.execute(
+                """
+                INSERT OR IGNORE INTO events
+                    (event_date, target_portions, is_open)
+                VALUES (?, ?, 0)
+                """,
+                (event_date.isoformat(), target_portions),
+            )
+            created_count += cursor.rowcount
+            event_date += timedelta(days=7)
+
+    return created_count
+
+
+def load_events(include_closed=False):
+    with sqlite3.connect(DATABASE_PATH) as connection:
+        if include_closed:
+            rows = connection.execute(
+                """
+                SELECT event_date, target_portions,
+                       pickup_details, dropoff_details, is_open
+                FROM events
+                ORDER BY event_date
+                """
+            ).fetchall()
+        else:
+            rows = connection.execute(
+                """
+                SELECT event_date, target_portions,
+                       pickup_details, dropoff_details, is_open
+                FROM events
+                WHERE is_open = 1
+                ORDER BY event_date
+                """
+            ).fetchall()
+
+    return [
+        {
+            "event_date": date.fromisoformat(event_date_text),
+            "target_portions": target_portions,
+            "pickup_details": pickup_details,
+            "dropoff_details": dropoff_details,
+            "is_open": bool(is_open),
+        }
+        for (
+            event_date_text,
+            target_portions,
+            pickup_details,
+            dropoff_details,
+            is_open,
+        ) in rows
+    ]
+
+
+def save_event(event_date, target_portions, pickup_details, dropoff_details, is_open):
+    if event_date.weekday() != 4:
+        return False, "Choose a Friday for the event date."
+
+    if target_portions < 1:
+        return False, "The target must be at least 1 portion."
+
+    with sqlite3.connect(DATABASE_PATH) as connection:
+        connection.execute(
+            """
+            INSERT INTO events
+                (event_date, target_portions, pickup_details,
+                 dropoff_details, is_open)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(event_date) DO UPDATE SET
+                target_portions = excluded.target_portions,
+                pickup_details = excluded.pickup_details,
+                dropoff_details = excluded.dropoff_details,
+                is_open = excluded.is_open
+            """,
+            (
+                event_date.isoformat(),
+                target_portions,
+                pickup_details.strip(),
+                dropoff_details.strip(),
+                int(is_open),
+            ),
+        )
+
+    return True, "Event saved."
 
 
 
