@@ -2,3 +2,4 @@
 __pycache__/
 sandwich_angels.db
 .backups/
+.streamlit/secrets.toml*
