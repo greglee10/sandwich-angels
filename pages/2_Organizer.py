@@ -119,10 +119,40 @@ if "organizer_section" not in st.session_state:
 if st.session_state["organizer_section"] == "menu":
     st.subheader("Organizer menu")
 
+    st.markdown(
+        """
+        <style>
+        .st-key-menu_event_schedule button,
+        .st-key-menu_donations button,
+        .st-key-menu_kits button,
+        .st-key-menu_completion button,
+        .st-key-menu_volunteer_history button {
+            background-color: #EAF4EC !important;
+            color: #244B2B !important;
+            border: 1px solid #C6DEC9 !important;
+        }
+
+        .st-key-menu_event_schedule button:hover,
+        .st-key-menu_donations button:hover,
+        .st-key-menu_kits button:hover,
+        .st-key-menu_completion button:hover,
+        .st-key-menu_volunteer_history button:hover {
+            background-color: #DDEFE0 !important;
+            color: #1C3F23 !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
     left_column, right_column = st.columns(2)
 
     with left_column:
-        with st.container(border=True):
+        with st.container(
+            height=250,
+            border=True,
+            key="event_schedule_card",
+        ):
             st.subheader("Event schedule")
             st.write("Create Friday events and update pickup and drop-off details.")
             if st.button(
@@ -133,7 +163,11 @@ if st.session_state["organizer_section"] == "menu":
                 st.session_state["organizer_section"] = "event_schedule"
                 st.rerun()
 
-        with st.container(border=True):
+        with st.container(
+            height=220,
+            border=True,
+            key="kits_card",
+        ):
             st.subheader("Kit assignments & pickup")
             st.write("Review ingredient kits and mark kit pickup.")
             if st.button(
@@ -144,7 +178,11 @@ if st.session_state["organizer_section"] == "menu":
                 st.session_state["organizer_section"] = "kits"
                 st.rerun()
 
-        with st.container(border=True):
+        with st.container(
+            height=220,
+            border=True,
+            key="volunteer_history_card",
+        ):
             st.subheader("Volunteer roster & history")
             st.write("Review volunteer signups and attendance.")
             if st.button(
@@ -156,7 +194,11 @@ if st.session_state["organizer_section"] == "menu":
                 st.rerun()
 
     with right_column:
-        with st.container(border=True):
+        with st.container(
+            height=250,
+            border=True,
+            key="donations_card",
+        ):
             st.subheader("Donations & shopping list")
             st.write("Enter donated ingredients and calculate what to buy.")
             if st.button(
@@ -167,7 +209,11 @@ if st.session_state["organizer_section"] == "menu":
                 st.session_state["organizer_section"] = "donations"
                 st.rerun()
 
-        with st.container(border=True):
+        with st.container(
+            height=220,
+            border=True,
+            key="completion_card",
+        ):
             st.subheader("Event completion")
             st.write("Record how many sandwiches were completed.")
             if st.button(
@@ -180,6 +226,25 @@ if st.session_state["organizer_section"] == "menu":
 
     st.stop()
 
+
+
+st.markdown(
+    """
+    <style>
+    .st-key-back_to_organizer_menu button {
+        background-color: #EAF4EC !important;
+        color: #244B2B !important;
+        border: 1px solid #C6DEC9 !important;
+    }
+
+    .st-key-back_to_organizer_menu button:hover {
+        background-color: #DDEFE0 !important;
+        color: #1C3F23 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 if st.button("Back to organizer menu", key="back_to_organizer_menu"):
     st.session_state["organizer_section"] = "menu"
